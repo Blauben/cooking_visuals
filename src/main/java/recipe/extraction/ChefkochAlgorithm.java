@@ -18,5 +18,6 @@ public class ChefkochAlgorithm implements RecipeExtractAlgorithm {
     public String[] extractRecipeData(String htmlString) {
         int beginning = htmlString.indexOf("[", htmlString.indexOf("recipeIngredient")); // index Anfang
         htmlString.indexOf("]", beginning); // index Ende
+        return new String[]{};
     }
 }

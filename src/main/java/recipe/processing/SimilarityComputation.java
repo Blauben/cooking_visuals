@@ -11,22 +11,22 @@ public class SimilarityComputation {
     }
 
     private static void calculateTable(String shorter, String longer) {
-        levenshteinTable = new int[shorter.length() + 1][longer.length() + 1];
-        for (int i = 0; i < levenshteinTable.length; i++) {
-            levenshteinTable[i][0] = i;
+        levenshteinTable = new int[longer.length() + 1][shorter.length() + 1];
+        for (int i = 0; i < levenshteinTable[0].length; i++) {
+            levenshteinTable[0][i] = i;
         }
-        for (int j = 0; j < levenshteinTable[0].length; j++) {
-            levenshteinTable[0][j] = j;
+        for (int j = 0; j < levenshteinTable.length; j++) {
+            levenshteinTable[j][0] = j;
         }
-        for (int j = 1; j < levenshteinTable[0].length; j++) {
-            for (int i = 1; i < levenshteinTable.length; i++) {
+        for (int j = 1; j < levenshteinTable.length; j++) {
+            for (int i = 1; i < levenshteinTable[0].length; i++) {
                 int substitution;
                 if (shorter.charAt(i - 1) == longer.charAt(j - 1)) {
                     substitution = 0;
                 } else {
                     substitution = 1;
                 }
-                levenshteinTable[i][j] = Math.min(Math.min(levenshteinTable[i - 1][j] + 1, levenshteinTable[i][j - 1] + 1), levenshteinTable[i - 1][j - 1] + substitution);
+                levenshteinTable[j][i] = Math.min(Math.min(levenshteinTable[j - 1][i] + 1, levenshteinTable[j][i - 1] + 1), levenshteinTable[j - 1][i - 1] + substitution);
             }
         }
     }
@@ -45,8 +45,8 @@ public class SimilarityComputation {
         }
     }
 
-    public int[][] testCalculateTable() {
-        calculateTable("kitten", "sitting");
+    public static int[][] testCalculateTable(String shorter, String longer) {
+        calculateTable(shorter, longer);
         return levenshteinTable;
     }
 }

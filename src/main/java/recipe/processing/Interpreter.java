@@ -1,52 +1,55 @@
 package recipe.processing;
 
-import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Interpreter {
 
-    private String[] ingredientsTemp;
+    //TODO: remove main
+    public static void main(String[] args) {
+        Interpreter.startRecipeParser(new String[]{"Tomate"}, "Die Tomaten vom Strunk befreien und in Spalten schneiden.");
+    }
 
-    public static void evaluateRecipe(String[] ingredients, String recipe) {
-        InstructionRoot[] roots = new InstructionRoot[ingredients.length];
-        for (int i = 0; i < ingredients.length; i++) {
-            roots[i] = new InstructionRoot(ingredients[i]);
+    public static void startRecipeParser(String[] ingredients, String recipe) {
+        if (ingredients.length == 0) {
+            return;
         }
+
+        List<InstructionRoot> roots = new ArrayList<>(ingredients.length);
+        for (String ingredient : ingredients) {
+            roots.add(new InstructionRoot(cleanIngredient(ingredient)));
+        }
+        processDocument(roots, recipe);
+    }
+
+    private static String cleanIngredient(String rawIngredient) {
+        return rawIngredient.replaceAll("[(),]", "").split(" ")[0];
+    }
+
+    private static void processDocument(List<InstructionRoot> roots, String recipe) {
         StanfordCoreNLP pipeline = new StanfordCoreNLP("german");
         CoreDocument document = new CoreDocument(recipe);
         pipeline.annotate(document);
 
         for (CoreSentence sentence : document.sentences()) {
-            SemanticGraph dependencyParse = sentence.dependencyParse();
-
+            processSentence(sentence, roots);
         }
     }
 
-    public static void main(String[] args) {
-        evaluateRecipe(new String[]{}, "Die Tomaten vom Strunk befreien und in Spalten schneiden.");
-    }
-
-    public int[] getIngredientIndices(CoreSentence sentence, String[] ingredients) {
-        ingredientsTemp = ingredients;
-        List<CoreLabel> tokens = sentence.tokens();
-        for (int i = 0; i < tokens.size(); i++) {
-            CoreLabel current = tokens.get(i);
-            if (current.tag().equals("NOUN") && isIngredient(current.toString())) {
-
-            }
+    private static void processSentence(CoreSentence sentence, List<InstructionRoot> roots) {
+        RootList root = new RootList(sentence, roots);
+        SemanticGraph dependencyParse = sentence.dependencyParse();
+        while (root.hasNext()) {
+            int sentenceIndex = root.next().sentenceIndex();
+            IndexedWord current = dependencyParse.getNodeByIndexSafe(sentenceIndex);
+            // dependencyParse.
+            //TODO: continue
         }
-        return new int[]{};
-    }
-
-    private boolean isIngredient(String noun) {
-        for (String ingredient : ingredientsTemp) {
-            //TODO:continue
-        }
-        return false;
     }
 }

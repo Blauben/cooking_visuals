@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class InstructionRoot {
-    private Optional<String> name;
+    private final Optional<String> name;
     private List<Instruction> instructions;
     private String[] mergeWith;
 
@@ -15,6 +15,7 @@ public class InstructionRoot {
     }
 
     public InstructionRoot() {
+        this.name = Optional.empty();
         setup();
     }
 
@@ -29,5 +30,10 @@ public class InstructionRoot {
 
     public void setMergeWith(String[] merge) {
         mergeWith = merge;
+    }
+
+    @Override
+    public String toString() {
+        return name.orElse("merge");
     }
 }

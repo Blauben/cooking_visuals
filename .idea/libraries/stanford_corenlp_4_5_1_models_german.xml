@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="stanford-corenlp-4.5.1-models-german">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/stanford-corenlp-4.5.1-models-german.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="jar://$PROJECT_DIR$/lib/stanford-corenlp-4.5.1-models-german.jar!/" recursive="false" />
+  </library>
+</component>

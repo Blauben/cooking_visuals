@@ -1,10 +1,9 @@
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandler;
-import java.time.*;
+import java.time.Duration;
 
 public class Anfrager {
     public static void main(String[] args) {
@@ -13,7 +12,6 @@ public class Anfrager {
             collectHTML(URI.create("https://javabeginners.de/Grundlagen/Bibliothek_einbinden.php"));
         } catch (Exception e) {
         }
-        ;
     }
 
     public static String collectHTML(URI url) throws IOException, InterruptedException {

@@ -19,4 +19,9 @@ public class Instruction {
     public void addDetail(List<String> details) {
         this.details.addAll(details);
     }
+
+    @Override
+    public String toString() {
+        return action + "(" + details + ")";
+    }
 }

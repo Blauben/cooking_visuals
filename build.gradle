@@ -18,8 +18,8 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:2.0.0'
     implementation 'org.slf4j:slf4j-simple:2.0.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
-    implementation 'edu.stanford.nlp:stanford-corenlp:4.2.0'
-    implementation files('lib/stanford-corenlp-4.2.0-models-german.jar')
+    implementation 'edu.stanford.nlp:stanford-corenlp:4.5.1'
+    implementation files('lib/stanford-corenlp-4.5.1-models-german.jar')
 }
 
 test {

@@ -5,9 +5,13 @@ import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.trees.Constituent;
+import edu.stanford.nlp.trees.LabeledScoredConstituentFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Interpreter {
@@ -16,6 +20,7 @@ public class Interpreter {
 
     public static void main(String[] args) {
         Interpreter.startRecipeParser(new String[]{"Tomaten"}, "Die Tomaten von der Pflanze befreien und in Spalten schneiden.");
+        System.out.println(roots);
     }
 
     public static void startRecipeParser(String[] ingredients, String recipe) {
@@ -67,25 +72,39 @@ public class Interpreter {
     }
 
     private static Instruction generateInstructionWithDetails(IndexedWord verb, CoreSentence sentence) {
+        Set<Constituent> constituents = sentence.constituencyParse().constituents(new LabeledScoredConstituentFactory());
         Instruction instr = new Instruction(verb.originalText());
-        sentence.dependencyParse().getOutEdgesSorted(verb);
-        /*if (rootIndex < action.getValue()) {
-            List<String> detailTokens = sentence.tokensAsStrings().subList(rootIndex, action.getValue() - 1);
-            String detail = detailTokens.stream().reduce("", (str1, str2) -> !str2.equals("und") ? str1 + " " + str2 : str1).trim();
-            instr.addDetail(detail);
-        }*/
-        return instr;
-    }
-
-    /*private static Instruction generateInstructionWithDetails(Map.Entry<String, Integer> action, int rootIndex, CoreSentence sentence) {
-        Instruction instr = new Instruction(action.getKey());
-        if (rootIndex < action.getValue()) {
-            List<String> detailTokens = sentence.tokensAsStrings().subList(rootIndex, action.getValue() - 1);
-            String detail = detailTokens.stream().reduce("", (str1, str2) -> !str2.equals("und") ? str1 + " " + str2 : str1).trim();
+        Optional<Constituent> verbPhrase = identifyVerbPhrase(constituents, verb.index());
+        Optional<Constituent> predicatePhrase = identifyPredicatePhrase(constituents, verbPhrase);
+        if (predicatePhrase.isPresent()) {
+            int[] range = new int[]{predicatePhrase.get().start(), predicatePhrase.get().end()};
+            String detail = String.join(" ", sentence.tokensAsStrings().subList(range[0], range[1] + 1));
             instr.addDetail(detail);
         }
         return instr;
-    }*/
+    }
+
+    private static Optional<Constituent> identifyVerbPhrase(Set<Constituent> constituents, int verbIndex) {
+        for (Constituent con : constituents) {
+            if (con.label().toString().equals("VP") && con.start() <= verbIndex && con.end() <= verbIndex) {
+                return Optional.of(con);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<Constituent> identifyPredicatePhrase(Set<Constituent> constituents, Optional<Constituent> verbPhrase) {
+        if (verbPhrase.isEmpty()) {
+            return Optional.empty();
+        }
+        int[] range = new int[]{verbPhrase.get().start(), verbPhrase.get().end()};
+        for (Constituent con : constituents) {
+            if (con.label().toString().equals("PP") && range[0] <= con.start() && con.end() <= range[1]) {
+                return Optional.of(con);
+            }
+        }
+        return Optional.empty();
+    }
 
     private static void parseMergeInstruction(RootList root, CoreSentence sentence) {
         while (root.hasNext()) {

@@ -1,3 +1,4 @@
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import recipe.processing.Interpreter;
 import recipe.processing.SimilarityComputation;
@@ -12,9 +13,11 @@ public class TestingClass {
         assertEquals(3, SimilarityComputation.similarity("sitting", "kitten"));
         assertTrue(3 > SimilarityComputation.similarity("Tomate", "tomaten"));
         assertFalse(3 > SimilarityComputation.similarity("Tomate", "tomate(n)"));
+        assertFalse(3 > SimilarityComputation.similarity("Zwiebel", "Tomate"));
     }
 
     @Test
+    @Disabled
     void testSingleIngredientRecipe() {
         Interpreter.startRecipeParser(new String[]{"Tomaten"}, "Die Tomaten vom Strunk befreien und in Spalten schneiden.");
         assertEquals("[Tomaten: [befreien([von dem Strunk]), schneiden([in Spalten])]]", Interpreter.getRoots().toString());

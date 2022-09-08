@@ -7,14 +7,16 @@ import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Interpreter {
 
     private static List<InstructionRoot> roots = new ArrayList<>();
+
+    public static void main(String[] args) {
+        Interpreter.startRecipeParser(new String[]{"Tomaten"}, "Die Tomaten von der Pflanze befreien und in Spalten schneiden.");
+    }
 
     public static void startRecipeParser(String[] ingredients, String recipe) {
         if (ingredients.length == 0) {
@@ -44,29 +46,38 @@ public class Interpreter {
 
     private static void processSentence(CoreSentence sentence) {
         RootList rootContainer = new RootList(sentence, roots);
-        SemanticGraph dependencyParse = sentence.dependencyParse();
         if (rootContainer.size() == 0) {
         } else if (rootContainer.size() == 1) {
-            parseElementaryInstruction(rootContainer.next(), dependencyParse, sentence);
+            parseElementaryInstruction(rootContainer.next(), sentence);
         } else {
-            parseMergeInstruction(rootContainer, dependencyParse, sentence);
+            parseMergeInstruction(rootContainer, sentence);
         }
     }
 
-    private static void parseElementaryInstruction(RootElement rootElement, SemanticGraph dependencyParse, CoreSentence sentence) {
+    private static void parseElementaryInstruction(RootElement rootElement, CoreSentence sentence) {
+        SemanticGraph dependencyParse = sentence.dependencyParse();
         IndexedWord coreWord = dependencyParse.getNodeByIndexSafe(rootElement.sentenceIndex() + 1);
-        Map<String, Integer> actions = identifyActions(coreWord, dependencyParse);
+        List<IndexedWord> actions = identifyActions(coreWord, dependencyParse);
         InstructionRoot node = rootElement.instructionRoot();
 
-        int startIndex = rootElement.sentenceIndex();
-        for (Map.Entry<String, Integer> action : actions.entrySet()) {
-            Instruction instr = generateInstructionWithDetails(action, startIndex + 1, sentence);
-            startIndex = action.getValue();
+        for (IndexedWord action : actions) {
+            Instruction instr = generateInstructionWithDetails(action, sentence);
             node.addInstruction(instr);
         }
     }
 
-    private static Instruction generateInstructionWithDetails(Map.Entry<String, Integer> action, int rootIndex, CoreSentence sentence) {
+    private static Instruction generateInstructionWithDetails(IndexedWord verb, CoreSentence sentence) {
+        Instruction instr = new Instruction(verb.originalText());
+        sentence.dependencyParse().getOutEdgesSorted(verb);
+        /*if (rootIndex < action.getValue()) {
+            List<String> detailTokens = sentence.tokensAsStrings().subList(rootIndex, action.getValue() - 1);
+            String detail = detailTokens.stream().reduce("", (str1, str2) -> !str2.equals("und") ? str1 + " " + str2 : str1).trim();
+            instr.addDetail(detail);
+        }*/
+        return instr;
+    }
+
+    /*private static Instruction generateInstructionWithDetails(Map.Entry<String, Integer> action, int rootIndex, CoreSentence sentence) {
         Instruction instr = new Instruction(action.getKey());
         if (rootIndex < action.getValue()) {
             List<String> detailTokens = sentence.tokensAsStrings().subList(rootIndex, action.getValue() - 1);
@@ -74,16 +85,16 @@ public class Interpreter {
             instr.addDetail(detail);
         }
         return instr;
-    }
+    }*/
 
-    private static void parseMergeInstruction(RootList root, SemanticGraph dependencyParse, CoreSentence sentence) {
+    private static void parseMergeInstruction(RootList root, CoreSentence sentence) {
         while (root.hasNext()) {
             RootElement current = root.next();
-            IndexedWord coreWord = dependencyParse.getNodeByIndexSafe(current.sentenceIndex() + 1);
+            IndexedWord coreWord = sentence.dependencyParse().getNodeByIndexSafe(current.sentenceIndex() + 1);
         }
     }
 
-    private static Map<String, Integer> identifyActions(IndexedWord coreWord, SemanticGraph dependencyParse) {
+    private static List<IndexedWord> identifyActions(IndexedWord coreWord, SemanticGraph dependencyParse) {
         List<IndexedWord> incoming = dependencyParse.getIncomingEdgesSorted(coreWord).stream().map(edge -> edge.getSource()).collect(Collectors.toList());
         filterVerbs(incoming);
         final List<IndexedWord> verbOutgoing = new ArrayList<>();
@@ -92,9 +103,7 @@ public class Interpreter {
         }
         filterVerbs(verbOutgoing);
         incoming.addAll(verbOutgoing);
-        Map<String, Integer> verbTable = new LinkedHashMap<>(incoming.size());
-        incoming.stream().forEach(word -> verbTable.put(word.originalText(), word.index()));
-        return verbTable;
+        return incoming;
     }
 
     private static void filterVerbs(List<IndexedWord> words) {

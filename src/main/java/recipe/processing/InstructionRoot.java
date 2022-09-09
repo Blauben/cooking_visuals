@@ -14,6 +14,10 @@ public abstract class InstructionRoot {
         instructions.add(instruction);
     }
 
+    public List<Instruction> getInstructions() {
+        return instructions;
+    }
+
     @Override
     public String toString() {
         return instructions.toString();

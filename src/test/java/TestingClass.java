@@ -19,7 +19,6 @@ public class TestingClass {
     @Test
     @Disabled
     void testSingleIngredientRecipe() {
-        Interpreter.startRecipeParser(new String[]{"Tomaten"}, "Die Tomaten vom Strunk befreien und in Spalten schneiden.");
-        assertEquals("[Tomaten: [befreien([von dem Strunk]), schneiden([in Spalten])]]", Interpreter.getRoots().toString());
+        Interpreter.main(new String[]{});
     }
 }

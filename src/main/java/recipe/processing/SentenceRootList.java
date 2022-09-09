@@ -8,12 +8,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-public class RootList implements Iterator<RootElement> {
+public class SentenceRootList implements Iterator<RootElement> {
     private static final int similarityLimit = 3;
     private final List<RootElement> indexList;
     private int iteratorPointer = 0;
 
-    public RootList(CoreSentence sentence, List<InstructionRoot> roots) {
+    public SentenceRootList(CoreSentence sentence, List<InstructionRoot> roots) {
         indexList = new ArrayList<>();
         getIngredientIndices(sentence, roots);
     }

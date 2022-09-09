@@ -6,20 +6,23 @@ import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.trees.Constituent;
+import edu.stanford.nlp.trees.ConstituentFactory;
 import edu.stanford.nlp.trees.LabeledScoredConstituentFactory;
+import edu.stanford.nlp.trees.SimpleConstituentFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Interpreter {
 
     private static List<InstructionRoot> roots = new ArrayList<>();
+    private static StanfordCoreNLP pipeline;
 
     public static void main(String[] args) {
-        Interpreter.startRecipeParser(new String[]{"Tomaten"}, "Die Tomaten von der Pflanze befreien und in Spalten schneiden.");
+        Interpreter.startRecipeParser(new String[]{"Äpfel"}, "Die Äpfel ungeschält achteln, entkernen und in Scheibchen schneiden.");
+        System.out.println(roots);
+        Interpreter.startRecipeParser(new String[]{"Zwiebeln", "Knoblauch"}, "Zwiebeln und Knoblauch schneiden und Knoblauch mit Oel vermischen.");
+
         System.out.println(roots);
     }
 
@@ -32,15 +35,31 @@ public class Interpreter {
         for (String ingredient : ingredients) {
             roots.add(new Ingredient(cleanIngredient(ingredient)));
         }
+        recipe = replaceUmlaute(recipe);
         processDocument(recipe);
     }
 
+    private static String replaceUmlaute(String output) {
+        String[][] UMLAUT_REPLACEMENTS = {{"Ä", "Ae"}, {"Ü", "Ue"}, {"Ö", "Oe"}, {"ä", "ae"}, {"ü", "ue"}, {"ö", "oe"}, {"ß", "ss"}};
+        String result = output;
+        for (int i = 0; i < UMLAUT_REPLACEMENTS.length; i++) {
+            result = result.replace(UMLAUT_REPLACEMENTS[i][0], UMLAUT_REPLACEMENTS[i][1]);
+        }
+        return result;
+    }
+
+    private static void initPipeline() {
+        if (pipeline == null) {
+            pipeline = new StanfordCoreNLP("german");
+        }
+    }
+
     private static String cleanIngredient(String rawIngredient) {
-        return rawIngredient.replaceAll("[(),]", "").split(" ")[0];
+        return replaceUmlaute(rawIngredient.replaceAll("[(),]", "").split(" ")[0]);
     }
 
     private static void processDocument(String recipe) {
-        StanfordCoreNLP pipeline = new StanfordCoreNLP("german");
+        initPipeline();
         CoreDocument document = new CoreDocument(recipe);
         pipeline.annotate(document);
 
@@ -50,12 +69,13 @@ public class Interpreter {
     }
 
     private static void processSentence(CoreSentence sentence) {
-        RootList rootContainer = new RootList(sentence, roots);
+        SentenceRootList rootContainer = new SentenceRootList(sentence, roots);
         if (rootContainer.size() == 0) {
-        } else if (rootContainer.size() == 1) {
-            parseElementaryInstruction(rootContainer.next(), sentence);
+            //TODO
         } else {
-            parseMergeInstruction(rootContainer, sentence);
+            while (rootContainer.hasNext()) {
+                parseElementaryInstruction(rootContainer.next(), sentence);
+            }
         }
     }
 
@@ -67,15 +87,21 @@ public class Interpreter {
 
         for (IndexedWord action : actions) {
             Instruction instr = generateInstructionWithDetails(action, sentence);
-            node.addInstruction(instr);
+            smartAddInstruction(node, instr);
+        }
+    }
+
+    private static void smartAddInstruction(InstructionRoot node, Instruction instruction) {
+        if (!node.getInstructions().contains(instruction)) {
+            node.addInstruction(instruction);
         }
     }
 
     private static Instruction generateInstructionWithDetails(IndexedWord verb, CoreSentence sentence) {
         Set<Constituent> constituents = sentence.constituencyParse().constituents(new LabeledScoredConstituentFactory());
         Instruction instr = new Instruction(verb.originalText());
-        Optional<Constituent> verbPhrase = identifyVerbPhrase(constituents, verb.index());
-        Optional<Constituent> predicatePhrase = identifyPredicatePhrase(constituents, verbPhrase);
+        Constituent verbPhrase = identifyParentPhrase(constituents, verb.index() - 1);
+        Optional<Constituent> predicatePhrase = identifyPredicatePhrase(constituents, verbPhrase, verb.index() - 1);
         if (predicatePhrase.isPresent()) {
             int[] range = new int[]{predicatePhrase.get().start(), predicatePhrase.get().end()};
             String detail = String.join(" ", sentence.tokensAsStrings().subList(range[0], range[1] + 1));
@@ -84,33 +110,35 @@ public class Interpreter {
         return instr;
     }
 
-    private static Optional<Constituent> identifyVerbPhrase(Set<Constituent> constituents, int verbIndex) {
+    private static Constituent identifyParentPhrase(Set<Constituent> constituents, int... phraseIndices) {
+        int start = 0;
+        int end = Integer.MAX_VALUE;
+        phraseIndices = Arrays.stream(phraseIndices).sorted().toArray();
+        Constituent min = null;
         for (Constituent con : constituents) {
-            if (con.label().toString().equals("VP") && con.start() <= verbIndex && con.end() <= verbIndex) {
+            if ((con.start() < phraseIndices[0] && phraseIndices[phraseIndices.length - 1] <= con.end() || con.start() <= phraseIndices[0] && phraseIndices[phraseIndices.length - 1] < con.end()) && con.end() - con.start() <= end - start) {
+                min = con;
+                start = min.start();
+                end = min.end();
+            }
+        }
+        return min;
+    }
+
+    private static Optional<Constituent> identifyPredicatePhrase(Set<Constituent> constituents, Constituent verbPhrase, int verbIndex) {
+        int[] range = new int[]{verbPhrase.start(), verbPhrase.end()};
+        ConstituentFactory factory = new SimpleConstituentFactory();
+        if (range[1] - range[0] == 1 && verbIndex == range[0]) {
+            return Optional.of(factory.newConstituent(range[1], range[1]));
+        } else if (range[1] - range[0] == 1 && verbIndex == range[1]) {
+            return Optional.of(factory.newConstituent(range[0], range[0]));
+        }
+        for (Constituent con : constituents) {
+            if (con.label().toString().equals("PP") && range[0] <= con.start() && con.end() <= range[1] && verbPhrase == identifyParentPhrase(constituents, con.start(), con.end())) {
                 return Optional.of(con);
             }
         }
         return Optional.empty();
-    }
-
-    private static Optional<Constituent> identifyPredicatePhrase(Set<Constituent> constituents, Optional<Constituent> verbPhrase) {
-        if (verbPhrase.isEmpty()) {
-            return Optional.empty();
-        }
-        int[] range = new int[]{verbPhrase.get().start(), verbPhrase.get().end()};
-        for (Constituent con : constituents) {
-            if (con.label().toString().equals("PP") && range[0] <= con.start() && con.end() <= range[1]) {
-                return Optional.of(con);
-            }
-        }
-        return Optional.empty();
-    }
-
-    private static void parseMergeInstruction(RootList root, CoreSentence sentence) {
-        while (root.hasNext()) {
-            RootElement current = root.next();
-            IndexedWord coreWord = sentence.dependencyParse().getNodeByIndexSafe(current.sentenceIndex() + 1);
-        }
     }
 
     private static List<IndexedWord> identifyActions(IndexedWord coreWord, SemanticGraph dependencyParse) {

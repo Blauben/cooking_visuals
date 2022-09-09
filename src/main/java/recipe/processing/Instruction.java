@@ -20,8 +20,21 @@ public class Instruction {
         this.details.addAll(details);
     }
 
+    public List<String> getDetails() {
+        return details;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
     @Override
     public String toString() {
         return action + "(" + details + ")";
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof Instruction otherInstruction && otherInstruction.getAction().equals(action) && otherInstruction.getDetails().equals(details);
     }
 }

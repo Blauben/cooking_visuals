@@ -31,7 +31,7 @@ public class SentenceRootList implements Iterator<RootElement> {
 
     private Optional<InstructionRoot> getInstructionRoot(String noun, List<InstructionRoot> roots) {
         for (InstructionRoot root : roots) {
-            if (root instanceof Ingredient ingredient && SimilarityComputation.similarity(noun, ingredient.getName()) <= similarityLimit) {
+            if (SimilarityComputation.similarity(noun, root.getName()) <= similarityLimit) {
                 return Optional.of(root);
             }
         }

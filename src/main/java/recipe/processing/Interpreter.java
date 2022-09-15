@@ -21,8 +21,9 @@ public class Interpreter {
     public static void main(String[] args) {
         Interpreter.startRecipeParser(new String[]{"Äpfel"}, "Die Äpfel ungeschält achteln, entkernen und in Scheibchen schneiden.");
         System.out.println(roots);
-        Interpreter.startRecipeParser(new String[]{"Zwiebeln", "Knoblauch"}, "Zwiebeln und Knoblauch schneiden und Knoblauch mit Oel vermischen.");
-
+        Interpreter.startRecipeParser(new String[]{"Chillischotenpflanze"}, "Chilli waschen und schneiden.");
+        System.out.println(roots);
+        Interpreter.startRecipeParser(new String[]{"Zwiebeln", "Knoblauch"}, "Zwiebeln und Knoblauch schneiden und mit Oel vermischen.");
         System.out.println(roots);
     }
 
@@ -32,11 +33,33 @@ public class Interpreter {
         }
 
         roots = new ArrayList<>(ingredients.length);
-        for (String ingredient : ingredients) {
-            roots.add(new Ingredient(cleanIngredient(ingredient)));
-        }
         recipe = replaceUmlaute(recipe);
+        for (String ingredient : ingredients) {
+            ingredient = tailorIngredientToRecipe(cleanIngredient(ingredient), recipe);
+            roots.add(new InstructionRoot(ingredient) {
+            });
+        }
         processDocument(recipe);
+    }
+
+    private static String tailorIngredientToRecipe(String ingredient, String recipe) {
+        if (recipe.contains(ingredient)) {
+            return ingredient;
+        }
+        String sub;
+        for (int i = ingredient.length() - 1; i > 0; i--) {
+            sub = ingredient.substring(0, i);
+            if (recipe.contains(sub)) {
+                return sub;
+            }
+        }
+        for (int i = 1; i < ingredient.length() - 2; i++) {
+            sub = ingredient.substring(i);
+            if (recipe.contains(sub)) {
+                return sub;
+            }
+        }
+        return ingredient;
     }
 
     private static String replaceUmlaute(String output) {
@@ -46,12 +69,6 @@ public class Interpreter {
             result = result.replace(UMLAUT_REPLACEMENTS[i][0], UMLAUT_REPLACEMENTS[i][1]);
         }
         return result;
-    }
-
-    private static void initPipeline() {
-        if (pipeline == null) {
-            pipeline = new StanfordCoreNLP("german");
-        }
     }
 
     private static String cleanIngredient(String rawIngredient) {
@@ -65,6 +82,22 @@ public class Interpreter {
 
         for (CoreSentence sentence : document.sentences()) {
             processSentence(sentence);
+        }
+        mergeIngredientBranches();
+    }
+
+    private static void initPipeline() {
+        if (pipeline == null) {
+            pipeline = new StanfordCoreNLP("german");
+        }
+    }
+
+    private static void mergeIngredientBranches() {
+        InstructionRoot core = roots.get(0);
+        for (int i = 1; i < roots.size(); i++) {
+            if (roots.get(i).getInstructions().size() > core.getInstructions().size()) {
+                core = roots.get(i);
+            }
         }
     }
 
@@ -91,10 +124,16 @@ public class Interpreter {
         }
     }
 
-    private static void smartAddInstruction(InstructionRoot node, Instruction instruction) {
-        if (!node.getInstructions().contains(instruction)) {
-            node.addInstruction(instruction);
+    private static List<IndexedWord> identifyActions(IndexedWord coreWord, SemanticGraph dependencyParse) {
+        List<IndexedWord> incoming = dependencyParse.getIncomingEdgesSorted(coreWord).stream().map(edge -> edge.getSource()).collect(Collectors.toList());
+        filterVerbs(incoming);
+        final List<IndexedWord> verbOutgoing = new ArrayList<>();
+        for (IndexedWord verb : incoming) {
+            verbOutgoing.addAll(dependencyParse.getOutEdgesSorted(verb).stream().map(edge -> edge.getTarget()).collect(Collectors.toList()));
         }
+        filterVerbs(verbOutgoing);
+        incoming.addAll(verbOutgoing);
+        return incoming;
     }
 
     private static Instruction generateInstructionWithDetails(IndexedWord verb, CoreSentence sentence) {
@@ -108,6 +147,12 @@ public class Interpreter {
             instr.addDetail(detail);
         }
         return instr;
+    }
+
+    private static void smartAddInstruction(InstructionRoot node, Instruction instruction) {
+        if (!node.getInstructions().contains(instruction)) {
+            node.addInstruction(instruction);
+        }
     }
 
     private static Constituent identifyParentPhrase(Set<Constituent> constituents, int... phraseIndices) {
@@ -139,18 +184,6 @@ public class Interpreter {
             }
         }
         return Optional.empty();
-    }
-
-    private static List<IndexedWord> identifyActions(IndexedWord coreWord, SemanticGraph dependencyParse) {
-        List<IndexedWord> incoming = dependencyParse.getIncomingEdgesSorted(coreWord).stream().map(edge -> edge.getSource()).collect(Collectors.toList());
-        filterVerbs(incoming);
-        final List<IndexedWord> verbOutgoing = new ArrayList<>();
-        for (IndexedWord verb : incoming) {
-            verbOutgoing.addAll(dependencyParse.getOutEdgesSorted(verb).stream().map(edge -> edge.getTarget()).collect(Collectors.toList()));
-        }
-        filterVerbs(verbOutgoing);
-        incoming.addAll(verbOutgoing);
-        return incoming;
     }
 
     private static void filterVerbs(List<IndexedWord> words) {

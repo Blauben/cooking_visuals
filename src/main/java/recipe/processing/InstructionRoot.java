@@ -5,9 +5,17 @@ import java.util.List;
 
 public abstract class InstructionRoot {
     private final List<Instruction> instructions;
+    private final InstructionRoot mergeSuccessor;
+    private final String name;
 
-    public InstructionRoot() {
+    public InstructionRoot(String name) {
         instructions = new ArrayList<>();
+        mergeSuccessor = null;
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public void addInstruction(Instruction instruction) {
@@ -18,8 +26,13 @@ public abstract class InstructionRoot {
         return instructions;
     }
 
+    public Instruction getInstructionReversed(int index) {
+        //TODO: continue
+        return new Instruction("");
+    }
+
     @Override
     public String toString() {
-        return instructions.toString();
+        return name + ": " + instructions;
     }
 }

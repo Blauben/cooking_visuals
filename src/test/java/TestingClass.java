@@ -1,6 +1,4 @@
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import recipe.processing.Interpreter;
 import recipe.processing.SimilarityComputation;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,9 +14,4 @@ public class TestingClass {
         assertFalse(3 > SimilarityComputation.similarity("Zwiebel", "Tomate"));
     }
 
-    @Test
-    @Disabled
-    void testSingleIngredientRecipe() {
-        Interpreter.main(new String[]{});
-    }
 }

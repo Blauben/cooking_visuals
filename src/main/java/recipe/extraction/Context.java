@@ -1,14 +1,18 @@
 package recipe.extraction;
 
-import java.io.IOException;
 import java.net.URI;
 
 public class Context {
 
-    public String[] extractRecipe(String url) throws IOException, InterruptedException {
+    private RecipeExtractAlgorithm algorithm;
+
+    public void setAlgorithm(RecipeExtractAlgorithm algorithm) {
+        this.algorithm = algorithm;
+    }
+
+    public String[] extractRecipe(String url) throws IllegalArgumentException {
         URI uri = URI.create(url);
         String htmlString = Fetcher.collectHTML(uri);
-        RecipeExtractAlgorithm algorithm = ExtractingPolicy.chooseAlgorithm(url);
         return algorithm.extractRecipeData(htmlString);
     }
 }

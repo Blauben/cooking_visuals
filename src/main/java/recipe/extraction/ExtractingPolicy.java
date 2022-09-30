@@ -16,7 +16,7 @@ public class ExtractingPolicy {
     private static String extractWebsiteFromURL(String url) throws IllegalArgumentException {
         try {
             URL urlWrapper = new URL(url);
-            return urlWrapper.getHost().split(".")[1];
+            return urlWrapper.getHost().split("\\.")[1];
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException();
         }

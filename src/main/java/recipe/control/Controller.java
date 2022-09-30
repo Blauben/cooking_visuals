@@ -31,8 +31,7 @@ public class Controller {
             System.err.println(e.getMessage());
             return;
         }
-        String[] ingredients = formatIngredients(recipe[INGREDIENTS]);
-        List<InstructionRoot> baseNodes = parseRecipe(ingredients, recipe[INSTRUCTIONS]);
+        List<InstructionRoot> baseNodes = parseRecipe(recipe[INSTRUCTIONS]);
         String output = generateJSONOutput(baseNodes);
         System.out.println(output);
     }
@@ -43,8 +42,8 @@ public class Controller {
         return context.extractRecipe(url);
     }
 
-    private List<InstructionRoot> parseRecipe(String[] ingredients, String instructions) {
-        Interpreter interpreter = new Interpreter(ingredients, instructions);
+    private List<InstructionRoot> parseRecipe(String recipe) {
+        Interpreter interpreter = new Interpreter(recipe);
         return interpreter.retrieveResult();
     }
 

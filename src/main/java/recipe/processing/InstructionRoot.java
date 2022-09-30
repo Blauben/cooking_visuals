@@ -3,7 +3,7 @@ package recipe.processing;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class InstructionRoot {
+public class InstructionRoot {
     private final List<Instruction> instructions;
     private final InstructionRoot mergeSuccessor;
     private final String name;

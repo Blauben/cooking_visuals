@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import 'branch_element.dart';
 
@@ -28,10 +29,39 @@ class Branch {
     return branch;
   }
 
-  Widget graph() {
+  Widget graph(BuildContext context) {
     List<Widget> branchElements =
-        instructions.map((element) => element.graph()).toList();
-    branchElements.insert(0, Text(environment));
-    return Column(children: branchElements);
+        instructions.map((element) => element.graph(context)).toList();
+    return Container(
+      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.fromLTRB(10, 5, 40, 10),
+      decoration: BoxDecoration(
+        border: Border.all(width: 2),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.amberAccent,
+      ),
+      child: Column(children: [_environment(), _branchBody(branchElements)]),
+    );
+  }
+
+  Widget _environment() {
+    return Text(
+      environment,
+      style: const TextStyle(fontWeight: FontWeight.w500),
+    );
+  }
+
+  Widget _branchBody(List<Widget> branchElements) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+          border: Border.all(
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: const Color.fromRGBO(102, 255, 102, 1)),
+      margin: const EdgeInsets.all(5),
+      child: Column(children: branchElements),
+    );
   }
 }

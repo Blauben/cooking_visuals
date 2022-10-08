@@ -51,8 +51,12 @@ class Viewer extends StatelessWidget {
     return MaterialApp(
       title: 'Graph Viewer',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+          primarySwatch: Colors.blue,
+          textTheme: Theme.of(context).textTheme.apply(
+              fontFamily: 'Arial',
+              fontSizeFactor: 1.3,
+              bodyColor: Colors.black,
+              displayColor: Colors.white)),
       home: const Graph(title: 'Graph'),
     );
   }
@@ -85,15 +89,15 @@ class GraphData extends State<Graph> {
         title: Text(widget.title),
       ),
       body: Column(
-        children: generateBranchVisualization(),
+        children: generateBranchVisualization(context),
       ),
     );
   }
 
-  List<Widget> generateBranchVisualization() {
+  List<Widget> generateBranchVisualization(BuildContext context) {
     List<Widget> widgets = List.empty(growable: true);
     for (Branch b in branches) {
-      widgets.add(b.graph());
+      widgets.add(b.graph(context));
     }
     return widgets;
   }

@@ -73,11 +73,12 @@ class Graph extends StatefulWidget {
 
 class GraphData extends State<Graph> {
   List<Branch> branches = List.empty();
+  Json jsonParser = Json();
 
   void visualizeJson(String json) {
     setState(() {
-      branches =
-          Json.parseJsonString(jsonTest); //TODO: remove "Test" after testing
+      branches = jsonParser
+          .parseJsonString(jsonTest); //TODO: remove "Test" after testing
     });
   }
 
@@ -96,9 +97,27 @@ class GraphData extends State<Graph> {
 
   List<Widget> generateBranchVisualization(BuildContext context) {
     List<Widget> widgets = List.empty(growable: true);
-    for (Branch b in branches) {
-      widgets.add(b.graph(context));
+    final root = jsonParser.getResultRoot();
+    if (root != null) {
+      List<Branch> currentLevel = <Branch>[root];
+      do {
+        widgets.insert(
+            0,
+            Row(
+                children: currentLevel
+                    .map((branch) => branch.graph(context))
+                    .toList()));
+        currentLevel = returnPredecessors(currentLevel);
+      } while (currentLevel.isNotEmpty);
     }
     return widgets;
+  }
+
+  List<Branch> returnPredecessors(List<Branch> parent) {
+    List<Branch> pre = List.empty(growable: true);
+    for (Branch b in parent) {
+      pre.addAll(b.prev);
+    }
+    return pre;
   }
 }
